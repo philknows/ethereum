@@ -1,0 +1,36 @@
+version: "3.4"
+services:
+  geth_docker:
+    image: ethereum/client-go:stable
+    restart: always
+    volumes:
+      - geth_docker:/data
+      - "./jwtsecret:/data/jwtsecret"
+    command: --mainnet --datadir /data --http --cache 2048 --maxpeers 30 --authrpc.addr localhost --authrpc.port 8551 --authrpc.vhosts localhost --authrpc.jwtsecret /data/jwtsecret --port 30304 
+    network_mode: host
+    container_name: geth_docker
+
+  beacon_node:
+    container_name: lighthouse
+    image: sigp/lighthouse:${LIGHTHOUSE_VERSION:-v4.2.0}
+    restart: always
+    volumes:
+      - beacon_node:/data
+      - logs:/logs
+      - "./jwtsecret:/jwtsecret"
+    network_mode: host
+    command: |
+      lighthouse bn
+      --datadir /data
+      --checkpoint-sync-url https://beaconstate-mainnet.chainsafe.io
+      --execution-endpoint http://0.0.0.0:8551
+      --execution-jwt /jwtsecret
+      --http
+      --http-port 5052
+      --enr-tcp-port 9001
+      --enr-udp-port 9001
+
+volumes:
+  geth_docker:
+  beacon_node:
+  logs:
