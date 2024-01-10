@@ -10,9 +10,28 @@ services:
     network_mode: host
     container_name: geth_docker
 
+  reth_docker:
+    image: ghcr.io/paradigmxyz/reth
+    restart: always
+    volumes:
+      - reth_docker:/data
+      - "./jwtsecret:/data/jwtsecret"
+    command: >
+      node
+      --chain mainnet
+      --log.file.directory /data/rethlogs
+      --authrpc.addr 0.0.0.0
+      --authrpc.port 8551
+      --authrpc.jwtsecret /data/jwtsecret
+      --http --http.addr 0.0.0.0 --http.port 8545
+      --http.api "eth,net,web3"
+      --discovery.port 30306
+    network_mode: host
+    container_name: reth_docker
+
   beacon_node:
     container_name: lighthouse
-    image: sigp/lighthouse:${LIGHTHOUSE_VERSION:-v4.2.0}
+    image: sigp/lighthouse
     restart: always
     volumes:
       - beacon_node:/data
@@ -22,13 +41,16 @@ services:
     command: |
       lighthouse bn
       --datadir /data
+      --network mainnet
       --checkpoint-sync-url https://beaconstate-mainnet.chainsafe.io
       --execution-endpoint http://0.0.0.0:8551
       --execution-jwt /jwtsecret
       --http
       --http-port 5052
-      --enr-tcp-port 9001
-      --enr-udp-port 9001
+      --enr-tcp-port 9006
+      --enr-udp-port 9006
+      --slots-per-restore-point 32
+      --disable-deposit-contract-sync
 
 volumes:
   geth_docker:
